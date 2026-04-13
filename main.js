@@ -1,7 +1,3 @@
-// ==========================================
-// Fluent Reveal Effect Library
-// ==========================================
-
 class FluentReveal {
     constructor(selector = '.fluent-tile') {
         this.selector = selector;
@@ -14,7 +10,6 @@ class FluentReveal {
     }
 
     injectStyles() {
-        // Проверяем, не добавлены ли уже стили, чтобы избежать дублей
         if (document.getElementById('fluent-reveal-styles')) return;
 
         const style = document.createElement('style');
@@ -22,80 +17,70 @@ class FluentReveal {
         style.innerHTML = `
             ${this.selector} {
                 position: relative;
-                overflow: hidden;
-                box-sizing: border-box;
-                cursor: default;
-                user-select: none;
-                transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
+                /* Важно: ставим прозрачный бордер, чтобы зарезервировать место под эффект */
+                border: 1.5px solid transparent; 
                 --mouse-x: 0px;
                 --mouse-y: 0px;
+                transition: transform 0.1s ease, background-color 0.2s ease;
             }
 
-            ${this.selector}:active {
-                transform: scale(0.96);
-            }
-
-            /* Внутренний фонарик */
+            /* Эффект свечения внутри (Hover) */
             ${this.selector}::before {
                 content: '';
                 position: absolute;
                 inset: 0;
                 background: radial-gradient(
                     circle 120px at var(--mouse-x) var(--mouse-y), 
-                    rgba(255, 255, 255, 0.1), 
+                    rgba(255, 255, 255, 0.08), 
                     transparent
                 );
+                border-radius: inherit; /* Наследует скругление родителя */
                 opacity: 0;
                 pointer-events: none;
-                transition: opacity 0.3s ease;
                 z-index: 1;
             }
 
-            /* Обводка (Reveal Border) */
+            /* Эффект обводки (Reveal Border) */
             ${this.selector}::after {
                 content: '';
                 position: absolute;
-                inset: 0;
-                padding: 1.5px;
+                /* Растягиваем на всю площадь, включая область бордера */
+                top: -1.5px; left: -1.5px; right: -1.5px; bottom: -1.5px;
+                
                 background: radial-gradient(
-                    circle 100px at var(--mouse-x) var(--mouse-y), 
-                    rgba(255, 255, 255, 0.25), 
+                    circle 100px at calc(var(--mouse-x) + 1.5px) calc(var(--mouse-y) + 1.5px), 
+                    rgba(255, 255, 255, 0.4), 
                     transparent
                 );
-                -webkit-mask: linear-gradient(#fff, #fff) content-box, linear-gradient(#fff, #fff);
+                
+                border-radius: inherit; /* Идеальное повторение углов */
+                
+                /* Магия маскировки: оставляем видимым только сам контур */
+                padding: 1.5px;
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
                 -webkit-mask-composite: xor;
                 mask-composite: exclude;
+                
                 opacity: 0;
                 pointer-events: none;
+                z-index: 0;
                 transition: opacity 0.3s ease;
-                z-index: 1;
             }
 
-            body:hover ${this.selector}::after {
-                opacity: 1;
-            }
+            /* Состояния */
+            body:hover ${this.selector}::after { opacity: 1; }
+            ${this.selector}:hover::before { opacity: 1; }
 
-            ${this.selector}:hover::before {
-                opacity: 1;
-            }
-
+            /* Усиление обводки при наведении конкретно на плитку */
             ${this.selector}:hover::after {
                 background: radial-gradient(
-                    circle 100px at var(--mouse-x) var(--mouse-y), 
-                    rgba(255, 255, 255, 0.6), 
+                    circle 100px at calc(var(--mouse-x) + 1.5px) calc(var(--mouse-y) + 1.5px), 
+                    rgba(255, 255, 255, 0.7), 
                     transparent
                 );
             }
 
-            ${this.selector}:active::before {
-                background: radial-gradient(
-                    circle 120px at var(--mouse-x) var(--mouse-y), 
-                    rgba(255, 255, 255, 0.2), 
-                    transparent
-                );
-            }
-
-            /* Поднятие контента над эффектами */
             ${this.selector} > * {
                 position: relative;
                 z-index: 2;
@@ -109,16 +94,11 @@ class FluentReveal {
             const tiles = document.querySelectorAll(this.selector);
             tiles.forEach(tile => {
                 const rect = tile.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                tile.style.setProperty('--mouse-x', `${x}px`);
-                tile.style.setProperty('--mouse-y', `${y}px`);
+                tile.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                tile.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
             });
         });
     }
 }
 
-// Автозапуск при загрузке документа
-document.addEventListener('DOMContentLoaded', () => {
-    new FluentReveal('.fluent-tile');
-});
+document.addEventListener('DOMContentLoaded', () => new FluentReveal('.fluent-tile'));
